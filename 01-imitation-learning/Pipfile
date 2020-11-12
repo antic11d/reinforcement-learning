@@ -1,0 +1,38 @@
+[[source]]
+
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+
+[[source]]
+
+name = "test"
+url = "https://test.pypi.org/simple"
+verify_ssl = false
+
+
+[dev-packages]
+
+
+
+[packages]
+
+matplotlib = "*"
+numpy = "*"
+stable-baselines3 = "*"
+box2d = "*"
+box2d-kengz = "*"
+tensorboardx = "*"
+ipykernel = "*"
+jupyter = "*"
+
+
+[requires]
+
+python_version = "3.6"
+
+
+[packages.gym]
+
+extras = [ "box2d",]
