@@ -79,59 +79,32 @@ class ValueIterationAgent(Agent):
     self.discount = discount
     self.iterations = iterations
 
-    # TODO: init randomly
     states = self.mdp.getStates()
-    self.values = {s: 0.0 for s in states}
-    self.new_values = {s: 0.0 for s in states}
+    number_states = len(states)
 
-    flag = True
-
-    for i in range(self.iterations):
-        if self.values[self.mdp.getStartState()] > 0 and flag:
-            print('First iter in which value of start state is != 0: ', i)
-            flag = False
-
-        for s in states:
-            if self.mdp.isTerminal(s):
-                continue
-
-            possible_actions = self.mdp.getPossibleActions(s)
-            results_to_maximize_over = []
-            for a in possible_actions:
-                rew = self.mdp.getReward(s, a, None)
-                transition_states_probs = self.mdp.getTransitionStatesAndProbs(s, a)
-
-                total_sum = rew
-                for next_state, prob in transition_states_probs:
-                    total_sum += prob * self.values[next_state]
-                total_sum *= discount
-
-                results_to_maximize_over.append(total_sum)
-
-            self.new_values[s] = np.max(results_to_maximize_over)
-
-        self.values = deepcopy(self.new_values)
+    self.V = { s: 0 for s in states }
 
 
-    self.q = {(s, a): 0 for s in states for a in self.mdp.getPossibleActions(s)}
+    for i in range(iterations):
+      newV = {}
+      for s in states:
+        actions = self.mdp.getPossibleActions(s)
+        if len(actions) < 1:
+          newV[s] = 0.0
+        else:
+          newV[s] = np.max([ self.mdp.getReward(s, a, None) + \
+                             self.discount * np.sum([prob * self.V[sp]
+                                                     for sp, prob in self.mdp.getTransitionStatesAndProbs(s, a) ])
+                             for a in actions ])
+      self.V = newV
 
-    for s, a in self.q:
-        rew = self.mdp.getReward(s, a, None)
-        transition_states_probs = self.mdp.getTransitionStatesAndProbs(s, a)
-
-        total_sum = rew
-        for next_state, prob in transition_states_probs:
-            total_sum += prob * self.values[next_state]
-        total_sum *= discount
-
-        self.q[(s, a)] = total_sum
 
   def getValue(self, state):
     """
     Look up the value of the state (after the indicated
     number of value iteration passes).
     """
-    return self.values[state]
+    return self.V[state]
 
 
 
@@ -139,26 +112,27 @@ class ValueIterationAgent(Agent):
     """
     Look up the q-value of the state action pair
     (after the indicated number of value iteration
-    passes).
+    passes).  Note that value iteration does not
+    necessarily create this quantity and you may have
+    to derive it on the fly.
     """
-
-    return self.q[(state, action)]
-
-
+    # get all successor states and probabilities and evaluate value of these states
+    return self.mdp.getReward(state, action, None) + \
+      self.discount *  np.sum([self.V[sp] * prob for sp, prob in self.mdp.getTransitionStatesAndProbs(state, action)])
 
   def getPolicy(self, state):
     """
     Look up the policy's recommendation for the state
     (after the indicated number of value iteration passes).
     """
-    if self.mdp.isTerminal(state):
-        return None
-
+    # do greedy on Q
     actions = self.mdp.getPossibleActions(state)
-    values_to_maximize_over = [self.q[(state, a)] for a in actions]
-    return actions[np.argmax(values_to_maximize_over)]
-
-
+    if len(actions) < 1:
+      return None
+    else:
+      qValues = [self.getQValue(state, a) for a in actions]
+      action_index = np.argmax(qValues)
+      return actions[action_index]
 
   def getAction(self, state):
     """
@@ -172,7 +146,6 @@ class ValueIterationAgent(Agent):
     Not used for value iteration agents!
     """
     pass
-
 
 ################################################################################
 
