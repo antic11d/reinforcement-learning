@@ -3,7 +3,6 @@ import numpy as np
 
 
 class Agent:
-
 	def getAction(self, state):
 		"""
 		For the given state, get the agent's chosen
